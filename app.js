@@ -20,9 +20,8 @@ function inputCheck(val) {
  return true;
 }
 
-// HTTP サーバのポートを指定する
-app.listen(8080);
-
+// Webサーバの構築 ********************************************
+app.listen(8080); // HTTP サーバのポートを指定する
 function handler (req, res) {
   fs.readFile(__dirname + '/index.html',
   function (err, data) {
@@ -35,16 +34,16 @@ function handler (req, res) {
     res.end(data);
   });
 }
+// **********************************************************
 
 io.on('connection', function (socket) {
-  // クライアントへデータ送信
-  // emit を使うとイベント名を指定できる
+
   socket.emit('news', { hello: 'world' });
   socket.on('my other event', function (data) {
-    // クライアントから受け取ったデータを出力する
     console.log(data);
   });
 
+  // ユーザ登録 *************************************************
   socket.on('register_name', function(data){
     console.log(data);
     if(inputCheck(data.name) == false){
@@ -52,9 +51,22 @@ io.on('connection', function (socket) {
     }
     else{
       fs.appendFileSync(csv_path, data.name + "," + String(user_id) + "\n");
-      user_id += 1;
       socket.emit('register_return', {status: "success", user_name: data.name, user_id: user_id});
+      user_id += 1;
     }
   });
+  // **********************************************************
+
+  let player1;
+  let player2;
+  socket.on("waiting", function(data){
+    player1 = {user_name: data.user_name, user_id: data.user_id};
+    if(data.user_id != player1.user_id){
+      player2 = {user_name: data.user_name, user_id: data.user_id};
+    }
+    console.log("player1: " ,player1);
+    console.log("player2: ", player2);
+
+  })
 
 });
