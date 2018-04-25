@@ -1,0 +1,15 @@
+{
+  "name": "bdaman",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "comma-separated-values": "^3.6.4",
+    "socket.io": "^2.1.0"
+  }
+}
