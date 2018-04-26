@@ -4,13 +4,17 @@ const fs = require('fs');
 const CSV = require('comma-separated-values');
 
 let csv_path = "user_data.csv"
-let csv_data = fs.readFileSync(csv_path, "utf-8");
-let tmp = new CSV(csv_data, {header:false});
-let data = tmp.parse();
-console.log(data);
-console.log(data.length);
-let user_id = data.length;
-
+let user_data;
+let user_id;
+function reload_user_data(){
+  let csv_data = fs.readFileSync(csv_path, "utf-8");
+  let tmp = new CSV(csv_data, {header:false});
+  user_data = tmp.parse();
+  console.log(user_data);
+  console.log(user_data.length);
+  user_id = user_data.length;
+}
+reload_user_data()
 
 function inputCheck(val) {
  if (val.match(/[^A-Za-z0-9]+/)) {
@@ -36,6 +40,8 @@ function handler (req, res) {
 }
 // **********************************************************
 
+let player_arr = []; // 通信中のユーザ情報を格納する配列
+let player_connection_arr = []; // ユーザが最後に接続した時間を格納する配列
 io.on('connection', function (socket) {
 
   socket.emit('news', { hello: 'world' });
@@ -45,28 +51,52 @@ io.on('connection', function (socket) {
 
   // ユーザ登録 *************************************************
   socket.on('register_name', function(data){
-    console.log(data);
     if(inputCheck(data.name) == false){
       socket.emit('register_return', {status: "fail"});
     }
     else{
       fs.appendFileSync(csv_path, data.name + "," + String(user_id) + "\n");
+      console.log("registered");
       socket.emit('register_return', {status: "success", user_name: data.name, user_id: user_id});
-      user_id += 1;
+      reload_user_data();
     }
   });
   // **********************************************************
 
-  let player1;
-  let player2;
-  socket.on("waiting", function(data){
-    player1 = {user_name: data.user_name, user_id: data.user_id};
-    if(data.user_id != player1.user_id){
-      player2 = {user_name: data.user_name, user_id: data.user_id};
+  // マッチング ************************************************
+  function check_player(player){ // player の有無の確認 / 接続していない player_connection_arr を1つ削除
+    let exist = false;
+    let rm_index;
+    let time = (new Date()).getTime();
+    for(let i=0; i<player_arr.length; i++){
+      if(player.user_id == player_arr[i].user_id){
+        exist = true;
+        player_connection_arr[i] = time;
+      }
+      if(time - player_connection_arr[i] >= 2000) rm_index = i;
     }
-    console.log("player1: " ,player1);
-    console.log("player2: ", player2);
+    if(rm_index != undefined){
+      player_arr.splice(rm_index,1);
+      player_connection_arr.splice(rm_index,1);
+    }
+    return exist;
+  }
 
+  setInterval(function(){
+    socket.emit("connection_check", {check:"ok"});
+  }, 1000);
+
+  socket.on("waiting", function(data){
+    let player = {user_name: data.user_name, user_id: data.user_id};
+    let time = (new Date()).getTime();
+    let exist = check_player(player);
+    if(exist == false){
+      player_arr.push(player);
+      player_connection_arr.push(time);
+    };
+    if(player_arr.length >= 1) socket.emit("room_info", {player_arr: player_arr});
+    console.log(player_arr);
   })
+  // **********************************************************
 
 });
