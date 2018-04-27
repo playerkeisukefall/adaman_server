@@ -45,6 +45,7 @@ let player_connection_arr = []; // ユーザが最後に接続した時間を格
 let player_ready_arr = []; // 対戦準備中のプレイヤーを格納する配列
 let player_ready_connection_arr = [];
 let on_battle = [];
+let on_battle_info = [];
 io.on('connection', function (socket) {
 
   socket.emit('news', { hello: 'world' });
@@ -144,5 +145,28 @@ io.on('connection', function (socket) {
     console.log(player_ready_arr);
   })
   // **********************************************************
+
+  // 対戦中 ****************************************************
+  function get_opponent_id(user_id){
+    for(let i=0; i<player_ready_arr.length; i++){
+      if(user_id == player_ready_arr[i].user_id) return player_ready_arr[i].opponent_id;
+    }
+    return 100;
+  }
+  socket.on("on_battle_submit", function(data){
+    on_battle_info[data.user_id] = data;
+    let opponent_id = get_opponent_id(data.user_id);
+    let opponent_data = on_battle_info[opponent_id];
+    if(opponent_data == undefined) console.log("opponent_data false");
+    else{
+      socket.emit("on_battle_get", { //実験
+        user_id: opponent_data.user_id,
+        player_info: opponent_data.player_info,
+        bullet_info: opponent_data.bullet_info
+      });
+    }
+  })
+  // **********************************************************
+
 
 });
