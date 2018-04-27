@@ -42,6 +42,9 @@ function handler (req, res) {
 
 let player_arr = []; // 通信中のユーザ情報を格納する配列
 let player_connection_arr = []; // ユーザが最後に接続した時間を格納する配列
+let player_ready_arr = []; // 対戦準備中のプレイヤーを格納する配列
+let player_ready_connection_arr = [];
+let on_battle = [];
 io.on('connection', function (socket) {
 
   socket.emit('news', { hello: 'world' });
@@ -86,6 +89,7 @@ io.on('connection', function (socket) {
     socket.emit("connection_check", {check:"ok"});
   }, 1000);
 
+  // 対戦相手を探しています
   socket.on("waiting", function(data){
     let player = {user_name: data.user_name, user_id: data.user_id};
     let time = (new Date()).getTime();
@@ -95,7 +99,49 @@ io.on('connection', function (socket) {
       player_connection_arr.push(time);
     };
     if(player_arr.length >= 1) socket.emit("room_info", {player_arr: player_arr});
-    console.log(player_arr);
+    //console.log(player_arr);
+  })
+
+  function check_ready_player(player){
+    let exist = false;
+    let available = false;
+    let rm_index;
+    let time = (new Date()).getTime();
+
+    for(let i=0; i<player_ready_arr.length; i++){
+      if(player.user_id == player_ready_arr[i].user_id){
+        exist = true;
+        player_ready_connection_arr[i] = time;
+      }
+      if(time - player_ready_connection_arr[i] >= 2000) rm_index = i;
+    }
+    if(rm_index != undefined){
+      player_ready_arr.splice(rm_index,1);
+      player_ready_connection_arr.splice(rm_index,1);
+    }
+    if(exist == false) return [exist, available];
+
+    for(let i=0; i<player_ready_arr.length; i++){
+      if(player.user_id == player_ready_arr[i].opponent_id) available = true;
+    }
+    return [exist, available];
+  }
+
+  // 対戦準備集
+  socket.on("ready", function(data){
+    let player = {user_id: data.user_id, opponent_id: data.opponent_id};
+    let time = (new Date()).getTime();
+    let exist, available;
+    [exist, available] = check_ready_player(player);
+    if(exist == false){
+      player_ready_arr.push(player);
+      player_ready_connection_arr.push(time);
+    };
+    if(exist == true && available == true){
+      socket.emit("lets_battle", {ready:"ok"})
+      on_battle.push(player)
+    }
+    console.log(player_ready_arr);
   })
   // **********************************************************
 
