@@ -162,7 +162,8 @@ io.on('connection', function (socket) {
       socket.emit("on_battle_get", { //実験
         user_id: opponent_data.user_id,
         player_info: opponent_data.player_info,
-        bullet_info: opponent_data.bullet_info
+        bullet_info: opponent_data.bullet_info,
+        bullet_exist: opponent_data.bullet_exist
       });
     }
   })
