@@ -139,6 +139,7 @@ io.on('connection', function (socket) {
       player_ready_connection_arr.push(time);
     };
     if(exist == true && available == true){
+      on_battle_info[player.user_id] = undefined;
       socket.emit("lets_battle", {ready:"ok"})
       on_battle.push(player)
     }
