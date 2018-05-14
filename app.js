@@ -158,13 +158,14 @@ io.on('connection', function (socket) {
     on_battle_info[data.user_id] = data;
     let opponent_id = get_opponent_id(data.user_id);
     let opponent_data = on_battle_info[opponent_id];
-    if(opponent_data == undefined) console.log("opponent_data false");
+    if(opponent_data == undefined) console.log("opponent_data[" + String(opponent_id) +"] false");
     else{
       socket.emit("on_battle_get", { //実験
         user_id: opponent_data.user_id,
         player_info: opponent_data.player_info,
         bullet_info: opponent_data.bullet_info,
-        bullet_exist: opponent_data.bullet_exist
+        bullet_exist: opponent_data.bullet_exist,
+        lose: opponent_data.lose
       });
     }
   })
